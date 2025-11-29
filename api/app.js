@@ -21,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/task', taskRoutes);
 app.use('/api/v1/folders', folderRoutes);
+app.get('/health', (req, res) => res.json({ ok: true, time: Date.now() }));
 
 // put your existing swaggerOptions object here (copy from previous file)
 const swaggerOptions = {
