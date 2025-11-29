@@ -9,10 +9,8 @@ const connectDb = async () => {
   if (mongoosePromise) return mongoosePromise;
 
   const opts = {
-    // fail fast so Vercel doesn't hang for 5+ minutes
-    serverSelectionTimeoutMS: 10000, // 10s
-    connectTimeoutMS: 10000,         // 10s
-    // other options are OK with modern mongoose
+    serverSelectionTimeoutMS: 10000, // fail fast (10s)
+    connectTimeoutMS: 10000
   };
 
   mongoosePromise = mongoose.connect(process.env.MONGO_URI, opts)
@@ -21,8 +19,8 @@ const connectDb = async () => {
       return mongoose.connection;
     })
     .catch((err) => {
-      mongoosePromise = null; // allow retry on next invocation
-      console.error('❌ MongoDB connection error:', err.message || err);
+      mongoosePromise = null; // allow retry later
+      console.error('❌ MongoDB connection error:', err && err.message ? err.message : err);
       throw err;
     });
 
@@ -35,22 +33,18 @@ const startServer = async () => {
   app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 };
 
-// local dev: node api/server.js
 if (require.main === module) {
   startServer().catch(() => process.exit(1));
 } else {
-  // serverless: wrap handler to ensure DB connects quickly before handling request
+  // serverless export: ensure DB connect attempt before handling; if fails, return 500 quickly
   const handler = serverless(app);
-
   module.exports = async (req, res) => {
     try {
       await connectDb();
     } catch (err) {
-      console.error('DB connect failed on serverless invocation:', err.message || err);
-      // respond quickly with 500 so Vercel doesn't hang
+      console.error('DB connect failed on serverless invocation:', err && err.message ? err.message : err);
       res.statusCode = 500;
-      res.end('DB connection failed');
-      return;
+      return res.end('DB connection failed');
     }
     return handler(req, res);
   };
