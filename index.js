@@ -1,4 +1,5 @@
 require('dotenv').config();
+const express = require('express'); // <-- ADD THIS LINE
 const mongoose = require('mongoose');
 const serverless = require('serverless-http');
 const app = require('./api/app.js');
