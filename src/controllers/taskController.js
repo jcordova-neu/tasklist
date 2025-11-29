@@ -1,7 +1,6 @@
-// Replace ESM imports with CommonJS requires:
-const Task = require('../models/task');
-const Folder = require('../models/folder');
-const mongoose = require('mongoose'); // <--- added
+const Task = require(require('path').join(__dirname, '../models/task'));
+const Folder = require(require('path').join(__dirname, '../models/folder'));
+const mongoose = require('mongoose');
 
 // helper: get user id from auth middleware or fallback to params
 const getUserId = (req) => req.user?.id || req.user?._id || req.params.userId;

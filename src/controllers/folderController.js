@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-const Folder = require('../models/folder');
-const Task = require('../models/task');
+const Folder = require(require('path').join(__dirname, '../models/folder'));
+const Task = require(require('path').join(__dirname, '../models/task'));
 
 const sanitize = (val) => {
     if (val == null) return null;
