@@ -1,3 +1,3 @@
-// Root entrypoint for Vercel — re-export api/server.js
+require('dotenv').config();
 const express = require('express');
 module.exports = require('./api/server.js');
