@@ -2,11 +2,12 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const serverless = require('serverless-http');
 
 // Routes
-const authRoutes = require('./src/routes/authRoutes');
-const taskRoutes = require('./src/routes/taskRoutes');
-const folderRoutes = require('./src/routes/folderRoutes');
+const authRoutes = require('../src/routes/authRoutes');
+const taskRoutes = require('../src/routes/taskRoutes');
+const folderRoutes = require('../src/routes/folderRoutes');
 
 // Swagger
 const swaggerUi = require('swagger-ui-express');
@@ -212,12 +213,30 @@ const swaggerOptions = {
 const swaggerSpec = swaggerJSDoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
 
-// MongoDB connection
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('✅ MongoDB connected');
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-  })
-  .catch((err) => console.error('❌ DB connection error:', err));
+const connectDb = async () => {
+  if (global.__mongoosePromise) return global.__mongoosePromise;
+  global.__mongoosePromise = mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => console.log('✅ MongoDB connected'))
+    .catch((err) => {
+      console.error('❌ DB connection error:', err);
+      throw err;
+    });
+  return global.__mongoosePromise;
+};
+
+const startServer = async () => {
+  await connectDb();
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+};
+
+// If run with `node api/index.js` start a long‑running server (local dev)
+// If imported by Vercel, export a serverless handler instead
+if (require.main === module) {
+  startServer().catch(() => process.exit(1));
+} else {
+  // ensure DB connects at cold start, and export serverless handler
+  connectDb().catch((err) => console.error('DB connect failed on serverless init:', err));
+  module.exports = serverless(app);
+}
